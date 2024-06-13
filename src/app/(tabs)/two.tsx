@@ -5,9 +5,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Dimensions,
-  FlatList,
-  ScrollView,
 } from "react-native";
 import React, { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
@@ -29,48 +26,48 @@ const Home = () => {
   const draggableItemList = [
     {
       id: 1,
-      name: "EMI Calculators",
+      name: "1",
       logo_url: "../images/2.png",
     },
     {
       id: 2,
-      name: "EMI Calculators",
+      name: "2",
       logo_url: "../images/2.png",
     },
     {
       id: 3,
-      name: "EMI Calculators",
+      name: "3",
       logo_url: "../images/2.png",
     },
     {
       id: 4,
-      name: "EMI Calculators",
+      name: "4",
       logo_url: "../images/2.png",
     },
     {
       id: 5,
-      name: "EMI Calculators",
+      name: "5",
       logo_url: "../images/2.png",
     },
   ];
   const FirstReceivingItemList = [
     {
-      id: 5,
-      name: "EMI Calculators",
-      logo_url: "../images/2.png",
-    },
-    {
       id: 6,
-      name: "EMI Calculators",
+      name: "6",
       logo_url: "../images/2.png",
     },
     {
       id: 7,
-      name: "EMI Calculators",
+      name: "7",
       logo_url: "../images/2.png",
     },
     {
       id: 8,
+      name: "EMI Calculators",
+      logo_url: "../images/2.png",
+    },
+    {
+      id: 9,
       name: "EMI Calculators",
       logo_url: "../images/2.png",
     },
@@ -91,7 +88,7 @@ const Home = () => {
         draggingStyle={styles.dragging}
         dragReleasedStyle={styles.dragging}
         hoverDraggingStyle={styles.hoverDragging}
-        dragPayload={index}
+        payload={index}
         longPressDelay={150}
         key={index}
         receivingStyle={styles.receiving}
@@ -126,7 +123,7 @@ const Home = () => {
     return (
       <DraxView
         style={[styles.centeredContent, styles.receivingZone]}
-        dragPayload={index}
+        payload={index}
         receivingStyle={styles.receiving}
         renderContent={({ viewState }) => {
           // const receivingDrag = viewState && viewState.receivingDrag;
@@ -166,46 +163,42 @@ const Home = () => {
     <View style={styles.container}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <DraxProvider>
-          {/* <ScrollView> */}
-
-          <View style={[styles.receivingContainer, {}]}>
-            <DraxView
-              style={styles.innerLayout}
-              onReceiveDragDrop={(event) => {
-                console.log(event.dragged.payload);
-                let selected_item = dragItemMiddleList[event.dragged.payload];
-                let newReceivingItemList = [...receivingItemList];
-                newReceivingItemList[newReceivingItemList.length] =
-                  selected_item;
-                setReceivedItemList(newReceivingItemList);
-
-                const newDragItemMiddleList = [...dragItemMiddleList].filter(
-                  (item) => item.id !== selected_item.id
-                );
-                console.log(newDragItemMiddleList);
-                setDragItemListMiddle(newDragItemMiddleList);
-              }}
-            >
-              <Text style={styles.headerText}>EMI Calculators</Text>
-              <DraxList
-                data={receivingItemList}
-                renderItemContent={ReceivingZoneUIComponent}
-                keyExtractor={(item, index) => {
-                  return index.toString();
-                }}
-                ItemSeparatorComponent={FlatListItemSeparator}
-                numColumns={4}
-                scrollEnabled={true}
-              />
-            </DraxView>
-          </View>
           <DraxView
             style={styles.innerLayout}
             onReceiveDragDrop={(event) => {
-              console.log(event.dragged.payload);
-              console.log(receivingItemList);
+              console.log(event.dragged);
+              let selected_item = dragItemMiddleList[event.dragged.payload];
+              let newReceivingItemList = [...receivingItemList];
+              newReceivingItemList[newReceivingItemList.length] = selected_item;
+              setReceivedItemList(newReceivingItemList);
+
+              const newDragItemMiddleList = [...dragItemMiddleList].filter(
+                (item) => item.id !== selected_item.id
+              );
+              console.log(newDragItemMiddleList);
+              setDragItemListMiddle(newDragItemMiddleList);
+            }}
+          >
+            <Text style={styles.headerText}>EMI Calculators</Text>
+            <DraxList
+              data={receivingItemList}
+              renderItemContent={ReceivingZoneUIComponent}
+              keyExtractor={(item, index) => {
+                return index.toString();
+              }}
+              ItemSeparatorComponent={FlatListItemSeparator}
+              numColumns={4}
+              scrollEnabled={true}
+            />
+          </DraxView>
+
+          <DraxView
+            style={styles.innerLayout}
+            onReceiveDragDrop={(event) => {
+              console.log(event.dragged);
+              // console.log(receivingItemList);
               let selected_item = receivingItemList[event.dragged.payload];
-              console.log(selected_item);
+              // console.log(selected_item);
               let newReceivingItemList = [...dragItemMiddleList];
               newReceivingItemList[newReceivingItemList.length] = selected_item;
               setDragItemListMiddle(newReceivingItemList);
@@ -213,21 +206,19 @@ const Home = () => {
               const newDragItemMiddleList = [...receivingItemList].filter(
                 (item) => item.id !== selected_item.id
               );
-              console.log(newDragItemMiddleList);
+              // console.log(newDragItemMiddleList);
               setReceivedItemList(newDragItemMiddleList);
             }}
           >
             <Text style={styles.headerText}>Loan</Text>
-            <View style={styles.draxListContainer}>
-              <DraxList
-                data={dragItemMiddleList}
-                renderItemContent={DragUIComponent}
-                keyExtractor={(item, index) => index.toString()}
-                numColumns={4}
-                ItemSeparatorComponent={FlatListItemSeparator}
-                scrollEnabled={true}
-              />
-            </View>
+            <DraxList
+              data={dragItemMiddleList}
+              renderItemContent={DragUIComponent}
+              keyExtractor={(item, index) => index.toString()}
+              numColumns={4}
+              ItemSeparatorComponent={FlatListItemSeparator}
+              scrollEnabled={true}
+            />
           </DraxView>
         </DraxProvider>
       </GestureHandlerRootView>
@@ -271,7 +262,7 @@ const styles = StyleSheet.create({
   },
 
   headerText: {
-    fontFamily: "groww_sans_medium",
+    fontFamily: "Arial",
     fontSize: 20,
     color: Colors.white,
     marginVertical: 10,
@@ -283,7 +274,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
     marginBottom: 10,
     textAlign: "center",
-    fontFamily: "groww_sans_ragular",
+    fontFamily: "Arial",
   },
   text1: {
     fontSize: 10,

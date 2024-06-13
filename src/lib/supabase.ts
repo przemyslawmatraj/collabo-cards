@@ -2,12 +2,24 @@ import "react-native-url-polyfill/auto";
 import * as SecureStore from "expo-secure-store";
 import { createClient } from "@supabase/supabase-js";
 
+function removeUserMetaData(itemValue: string) {
+  let parsedItemValue = JSON.parse(itemValue);
+
+  // Remove properties from the object
+  if (parsedItemValue) {
+    delete parsedItemValue.user?.identities;
+    delete parsedItemValue.user?.user_metadata;
+  }
+  // Convert the modified object back to a JSON string
+  return JSON.stringify(parsedItemValue);
+}
+
 const ExpoSecureStoreAdapter = {
-  getItem: (key: string) => {
+  getItem: async (key: string) => {
     return SecureStore.getItemAsync(key);
   },
   setItem: (key: string, value: string) => {
-    SecureStore.setItemAsync(key, value);
+    SecureStore.setItemAsync(key, removeUserMetaData(value));
   },
   removeItem: (key: string) => {
     SecureStore.deleteItemAsync(key);
@@ -20,7 +32,7 @@ const supabaseAnonKey =
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: ExpoSecureStoreAdapter as any,
+    storage: ExpoSecureStoreAdapter,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
