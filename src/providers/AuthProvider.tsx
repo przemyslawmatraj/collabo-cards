@@ -8,6 +8,7 @@ import {
 } from "react";
 import { supabase } from "@/lib/supabase";
 import { Session } from "@supabase/supabase-js";
+import { router } from "expo-router";
 
 export enum Role {
   Admin = "admin",
@@ -98,12 +99,14 @@ export default function AuthProvider({ children }: PropsWithChildren) {
         setSession(session);
         await getRole(session);
         setLoading(false);
+        router.navigate("/");
       } else if (event === "SIGNED_OUT") {
         setUser(null);
         setIsAuthenticated(false);
         setSession(null);
         await setRole(null);
         setLoading(false);
+        router.navigate("/auth/");
       }
       if (event === "TOKEN_REFRESHED") {
         setSession(session);

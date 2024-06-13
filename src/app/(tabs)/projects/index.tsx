@@ -106,7 +106,7 @@ const Home = () => {
                 ]}
               >
                 <Image
-                  source={require("../../../assets/images/favicon.png")}
+                  source={require("../../../../assets/images/favicon.png")}
                   style={styles.profileImg}
                 />
               </TouchableOpacity>
@@ -141,7 +141,7 @@ const Home = () => {
                 ]}
               >
                 <Image
-                  source={require("../../../assets/images/favicon.png")}
+                  source={require("../../../../assets/images/favicon.png")}
                   style={styles.profileImg}
                 />
               </TouchableOpacity>
