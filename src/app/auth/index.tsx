@@ -25,21 +25,14 @@ export default function TabOneScreen() {
   }
 
   return (
-    <View tw="flex flex-col items-center justify-center h-screen flex-1">
-      <Text tw="text-yellow-500 mx-auto">Tab One</Text>
-      <View tw="flex flex-col items-center justify-center">
-        <Text tw="text-yellow-500 mx-auto">
-          {isAuthenticated ? "Logged in " + role : "Logged out"}
-        </Text>
-        <View tw="flex flex-col items-center justify-center">
-          <Text tw="text-yellow-500 mx-auto">
-            {user ? user.email : "No session"}
-          </Text>
+    <View>
+      <Text>Tab One</Text>
+      <View>
+        <Text>{isAuthenticated ? "Logged in " + role : "Logged out"}</Text>
+        <View>
+          <Text>{user ? user.email : "No session"}</Text>
         </View>
-        <View tw="flex flex-col items-center justify-center">
-          <Text tw="text-yellow-500 mx-auto">hgfhgfhgfghfhgf</Text>
-        </View>
-        <View tw="flex flex-col items-center justify-center">
+        <View>
           <Button title="Sign In" onPress={handleSignIn} />
           <Button title="Sign Out" onPress={handleSignOut} />
           <Button title="Sign Up" onPress={handleSignUp} />
