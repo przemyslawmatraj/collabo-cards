@@ -1,10 +1,11 @@
 import { useLocalSearchParams } from "expo-router";
 import { Text } from "react-native-ui-lib";
 import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { DraxProvider, DraxView, DraxList } from "react-native-drax";
 import { useNavigation } from "expo-router";
+import { supabase } from "@/lib/supabase";
 
 const Colors = {
   backGroundColor: "#1A1A1A",
@@ -18,71 +19,75 @@ const Colors = {
 };
 
 const ProjectScreen = () => {
+  const [project, setProject] = useState<any>(null);
+  const [receivingItemList, setReceivedItemList] = React.useState<any>([]);
+  const [dragItemMiddleList, setDragItemListMiddle] = React.useState<any>([]);
+  const [doneItemList, setDoneItemList] = React.useState<any>([]);
+
   const { id } = useLocalSearchParams();
   const navigation = useNavigation();
 
   useEffect(() => {
-    navigation.setOptions({
-      drawerLabel: `Project ${id}`,
-      title: `Project ${id}`,
-    });
+    const fetchData = async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      const { data: stories, error: storiesError } = await supabase
+        .from("stories")
+        .select("*")
+        .eq("project_id", id)
+        .order("creation_date", { ascending: false });
+
+      if (error || storiesError) {
+        console.log(error, storiesError);
+        return;
+      }
+
+      setProject(data);
+
+      const todoStories = stories.filter((story) => story.status === "todo");
+      const inProgressStories = stories.filter(
+        (story) => story.status === "doing"
+      );
+      const doneStories = stories.filter((story) => story.status === "done");
+
+      setReceivedItemList(todoStories);
+      setDragItemListMiddle(inProgressStories);
+      setDoneItemList(doneStories);
+
+      navigation.setOptions({
+        drawerLabel: `Project ${data.name}`,
+        title: `Project ${data.name}`,
+      });
+    };
+
+    fetchData();
+
+    const channels = supabase
+      .channel("custom-all-channel")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "stories" },
+        (payload) => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      navigation.setOptions({
+        drawerLabel: `Project Loading`,
+        title: `Project Loading`,
+      });
+      setProject(null);
+      setReceivedItemList([]);
+      setDragItemListMiddle([]);
+      channels.unsubscribe();
+    };
   }, [id]);
-
-  const draggableItemList = [
-    {
-      id: 1,
-      name: "1",
-      logo_url: "../images/2.png",
-    },
-    {
-      id: 2,
-      name: "2",
-      logo_url: "../images/2.png",
-    },
-    {
-      id: 3,
-      name: "3",
-      logo_url: "../images/2.png",
-    },
-    {
-      id: 4,
-      name: "4",
-      logo_url: "../images/2.png",
-    },
-    {
-      id: 5,
-      name: "5",
-      logo_url: "../images/2.png",
-    },
-  ];
-  const FirstReceivingItemList = [
-    {
-      id: 6,
-      name: "6",
-      logo_url: "../images/2.png",
-    },
-    {
-      id: 7,
-      name: "7",
-      logo_url: "../images/2.png",
-    },
-    {
-      id: 8,
-      name: "EMI Calculators",
-      logo_url: "../images/2.png",
-    },
-    {
-      id: 9,
-      name: "EMI Calculators",
-      logo_url: "../images/2.png",
-    },
-  ];
-
-  const [receivingItemList, setReceivedItemList] = React.useState(
-    FirstReceivingItemList
-  );
-  const [dragItemMiddleList, setDragItemListMiddle] =
-    React.useState(draggableItemList);
 
   const DragUIComponent = ({ item, index }: any) => {
     return (
@@ -91,7 +96,7 @@ const ProjectScreen = () => {
         draggingStyle={styles.dragging}
         dragReleasedStyle={styles.dragging}
         hoverDraggingStyle={styles.hoverDragging}
-        payload={index}
+        payload={item.id}
         longPressDelay={150}
         key={index}
         receivingStyle={styles.receiving}
@@ -126,7 +131,7 @@ const ProjectScreen = () => {
     return (
       <DraxView
         style={[styles.centeredContent, styles.receivingZone]}
-        payload={index}
+        payload={item.id}
         receivingStyle={styles.receiving}
         renderContent={({ viewState }) => {
           // const receivingDrag = viewState && viewState.receivingDrag;
@@ -162,6 +167,22 @@ const ProjectScreen = () => {
     return <View style={styles.itemSeparator} />;
   };
 
+  if (!project) {
+    return <Text>Loading...</Text>;
+  }
+
+  const updateStoryStatus = async (storyId: number, status: string) => {
+    console.log(storyId, status);
+    const { data, error } = await supabase
+      .from("stories")
+      .update({ status })
+      .eq("id", storyId);
+
+    if (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -169,20 +190,10 @@ const ProjectScreen = () => {
           <DraxView
             style={styles.innerLayout}
             onReceiveDragDrop={(event) => {
-              console.log(event.dragged);
-              let selected_item = dragItemMiddleList[event.dragged.payload];
-              let newReceivingItemList = [...receivingItemList];
-              newReceivingItemList[newReceivingItemList.length] = selected_item;
-              setReceivedItemList(newReceivingItemList);
-
-              const newDragItemMiddleList = [...dragItemMiddleList].filter(
-                (item) => item.id !== selected_item.id
-              );
-              console.log(newDragItemMiddleList);
-              setDragItemListMiddle(newDragItemMiddleList);
+              updateStoryStatus(event.dragged.payload, "todo");
             }}
           >
-            <Text style={styles.headerText}>EMI Calculators</Text>
+            <Text style={styles.headerText}>To Do</Text>
             <DraxList
               data={receivingItemList}
               renderItemContent={ReceivingZoneUIComponent}
@@ -190,34 +201,38 @@ const ProjectScreen = () => {
                 return index.toString();
               }}
               ItemSeparatorComponent={FlatListItemSeparator}
-              numColumns={4}
+              numColumns={1}
               scrollEnabled={true}
             />
           </DraxView>
           <DraxView
             style={styles.innerLayout}
             onReceiveDragDrop={(event) => {
-              console.log(event.dragged);
-              // console.log(receivingItemList);
-              let selected_item = receivingItemList[event.dragged.payload];
-              // console.log(selected_item);
-              let newReceivingItemList = [...dragItemMiddleList];
-              newReceivingItemList[newReceivingItemList.length] = selected_item;
-              setDragItemListMiddle(newReceivingItemList);
-
-              const newDragItemMiddleList = [...receivingItemList].filter(
-                (item) => item.id !== selected_item.id
-              );
-              // console.log(newDragItemMiddleList);
-              setReceivedItemList(newDragItemMiddleList);
+              updateStoryStatus(event.dragged.payload, "doing");
             }}
           >
-            <Text style={styles.headerText}>Loan</Text>
+            <Text style={styles.headerText}>Doing</Text>
             <DraxList
               data={dragItemMiddleList}
               renderItemContent={DragUIComponent}
               keyExtractor={(item, index) => index.toString()}
-              numColumns={4}
+              numColumns={1}
+              ItemSeparatorComponent={FlatListItemSeparator}
+              scrollEnabled={true}
+            />
+          </DraxView>
+          <DraxView
+            style={styles.innerLayout}
+            onReceiveDragDrop={(event) => {
+              updateStoryStatus(event.dragged.payload, "done");
+            }}
+          >
+            <Text style={styles.headerText}>Done</Text>
+            <DraxList
+              data={doneItemList}
+              renderItemContent={DragUIComponent}
+              keyExtractor={(item, index) => index.toString()}
+              numColumns={1}
               ItemSeparatorComponent={FlatListItemSeparator}
               scrollEnabled={true}
             />
