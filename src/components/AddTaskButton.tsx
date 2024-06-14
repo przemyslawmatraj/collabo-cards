@@ -22,12 +22,12 @@ enum Status {
   done = "done",
 }
 
-export const AddStoryButton = ({
+export const AddTaskButton = ({
   status,
-  projectId,
+  storyId,
 }: {
   status: Status;
-  projectId: string | number;
+  storyId: string | number;
 }) => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [name, setName] = useState("");
@@ -40,12 +40,12 @@ export const AddStoryButton = ({
 
   const addStory = async () => {
     const { error } = await supabase
-      .from("stories")
+      .from("tasks")
       .insert({
         name,
         description,
         priority,
-        project_id: projectId,
+        story_id: storyId,
         status,
       })
       .single();
@@ -53,6 +53,8 @@ export const AddStoryButton = ({
     if (error) {
       console.log(error);
     }
+
+    setModalVisible(false);
   };
 
   return (
@@ -83,7 +85,7 @@ export const AddStoryButton = ({
         >
           <Iconify icon="ph:plus-fill" size={24} color={Colors.black} />
           <Text color={Colors.black} text80>
-            Add Story {status.toLocaleUpperCase()}
+            Add Task {status.toLocaleUpperCase()}
           </Text>
         </Card>
       </TouchableOpacity>

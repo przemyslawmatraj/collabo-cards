@@ -59,6 +59,14 @@ export default function LoggedInLayout() {
         }}
       />
       <Drawer.Screen
+        name="tasks/[id]" // This is the name of the page and must match the url from root
+        options={{
+          drawerItemStyle: { display: "none" },
+          drawerLabel: "Task",
+          title: "Task",
+        }}
+      />
+      <Drawer.Screen
         name="settings" // This is the name of the page and must match the url from root
         options={{
           drawerLabel: "Settings",

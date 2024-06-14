@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { Text } from "react-native-ui-lib";
-import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Card, Text, View } from "react-native-ui-lib";
+import { Image, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
@@ -14,7 +14,10 @@ import { supabase } from "@/lib/supabase";
 import { ScreenHeight } from "react-native-elements/dist/helpers";
 import { Iconify } from "react-native-iconify";
 import { useAuth } from "@/providers/AuthProvider";
-import { AddStoryButton } from "./AddStoryButton";
+import { AddStoryButton } from "@/components/AddStoryButton";
+import Moment from "moment";
+
+Moment.locale("en");
 
 enum Status {
   todo = "todo",
@@ -33,13 +36,37 @@ const Colors = {
   black: "#000", // Black
 };
 
+const PriorityIcon = ({ priority }: { priority: string }) => {
+  switch (priority) {
+    case "low":
+      return (
+        <Iconify icon="flat-color-icons:low-priority" size={20} color="#ccc" />
+      );
+    case "medium":
+      return (
+        <Iconify
+          icon="flat-color-icons:medium-priority"
+          size={20}
+          color="#ccc"
+        />
+      );
+    case "high":
+      return (
+        <Iconify icon="flat-color-icons:high-priority" size={20} color="#ccc" />
+      );
+    default:
+      return (
+        <Iconify icon="flat-color-icons:low-priority" size={20} color="#ccc" />
+      );
+  }
+};
+
 const ProjectScreen = () => {
   const [project, setProject] = useState<any>(null);
   const [receivingItemList, setReceivedItemList] = useState<any>([]);
   const [dragItemMiddleList, setDragItemListMiddle] = useState<any>([]);
   const [doneItemList, setDoneItemList] = useState<any>([]);
 
-  const { user } = useAuth();
   const { id } = useLocalSearchParams();
   const navigation = useNavigation();
 
@@ -49,7 +76,6 @@ const ProjectScreen = () => {
         .from("projects")
         .select("*")
         .eq("id", id)
-        .eq("owner_id", user?.id)
         .single();
 
       const { data: stories, error: storiesError } = await supabase
@@ -112,7 +138,6 @@ const ProjectScreen = () => {
           event: "*",
           schema: "public",
           table: "stories",
-          filter: `owner_id=eq.${user?.id}`,
         },
         async (payload) => {
           await fetchData();
@@ -130,12 +155,12 @@ const ProjectScreen = () => {
       setDragItemListMiddle([]);
       channels.unsubscribe();
     };
-  }, [id, user]);
+  }, [id]);
 
   const DragUIComponent = ({ item, index, status }: any) => {
     return (
       <DraxView
-        style={[styles.centeredContent, styles.draggableBox]}
+        style={styles.draggableBox}
         draggingStyle={styles.dragging}
         dragReleasedStyle={styles.dragging}
         hoverDraggingStyle={styles.hoverDragging}
@@ -145,27 +170,49 @@ const ProjectScreen = () => {
         receivingStyle={styles.receiving}
         renderContent={() => {
           return (
-            <View
-              style={{
-                alignItems: "center",
-              }}
-            >
+            <View>
               <TouchableOpacity
-                style={[
-                  styles.profileImgContainer,
-                  { backgroundColor: Colors.black },
-                ]}
                 onPress={() => {
                   router.navigate(`/stories/${item.id}`);
                 }}
               >
-                <Image
-                  source={require("../../../../assets/images/favicon.png")}
-                  style={styles.profileImg}
-                />
+                <Card
+                  style={[
+                    {
+                      marginTop: 10,
+                      backgroundColor: Colors.backGroundColor,
+                      borderRadius: 5,
+                      borderColor: Colors.borderColor,
+                      borderWidth: 1,
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      gap: 10,
+                      marginHorizontal: 10,
+                      marginVertical: 5,
+                    },
+                    {
+                      justifyContent: "center",
+                      alignItems: "center",
+                      padding: 10,
+                    },
+                  ]}
+                >
+                  <View flex row={false} style={{ maxWidth: 200 }}>
+                    <Text text80R black>
+                      {item.name}
+                    </Text>
+                    <Text text80R black>
+                      {item.description}
+                    </Text>
+                    <Text text80R black>
+                      {Moment(item.creation_date).format("d MMMM YYYY")}
+                    </Text>
+                  </View>
+                  <PriorityIcon priority={item.priority} />
+                </Card>
               </TouchableOpacity>
-
-              <Text style={styles.text1}>{item.name}</Text>
             </View>
           );
         }}
@@ -190,7 +237,7 @@ const ProjectScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <DraxProvider>
           <DraxScrollView horizontal scrollEnabled={true}>
@@ -240,6 +287,7 @@ const ProjectScreen = () => {
                 />
                 <AddStoryButton projectId={project.id} status={Status.doing} />
               </DraxView>
+
               <DraxView
                 style={styles.innerLayout}
                 onReceiveDragDrop={(event) => {
@@ -263,7 +311,7 @@ const ProjectScreen = () => {
           </DraxScrollView>
         </DraxProvider>
       </GestureHandlerRootView>
-    </View>
+    </ScrollView>
   );
 };
 
