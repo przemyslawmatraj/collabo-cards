@@ -5,6 +5,7 @@ import {
   GridList,
   Spacings,
   Card,
+  TouchableOpacity,
 } from "react-native-ui-lib";
 import { useAuth } from "@/providers/AuthProvider";
 import { supabase } from "@/lib/supabase";
@@ -16,7 +17,6 @@ Moment.locale("en");
 
 export default function TabOneScreen() {
   const [items, setItems] = useState([]);
-  const { signOut } = useAuth();
 
   useEffect(() => {
     supabase
@@ -38,26 +38,28 @@ export default function TabOneScreen() {
         horizontalAlignment={GridListItem.horizontalAlignment.left}
         renderCustomItem={() => {
           return (
-            <Card
-              bg-grey80
-              flex
-              width={"100%"}
-              padding-10
-              borderRadius={10}
-              onPress={() => {
-                router.navigate("/projects/" + item.id);
-              }}
-            >
-              <Text text60>
-                Project {index + 1} - {item.name}
-              </Text>
-              <Text>{item.description}</Text>
-              <Text>
-                {item.creation_date
-                  ? Moment(item.creation_date).format("d MMMM YYYY")
-                  : "No date"}
-              </Text>
-            </Card>
+            <TouchableOpacity>
+              <Card
+                bg-grey80
+                flex
+                width={"100%"}
+                padding-10
+                borderRadius={10}
+                onPress={() => {
+                  router.navigate(`/projects/${item.id}`);
+                }}
+              >
+                <Text text60>
+                  Project {index + 1} - {item.name}
+                </Text>
+                <Text>{item.description}</Text>
+                <Text>
+                  {item.creation_date
+                    ? Moment(item.creation_date).format("d MMMM YYYY")
+                    : "No date"}
+                </Text>
+              </Card>
+            </TouchableOpacity>
           );
         }}
       />

@@ -1,29 +1,45 @@
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Text } from "react-native-ui-lib";
 import { Image, StyleSheet, TouchableOpacity, View } from "react-native";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { DraxProvider, DraxView, DraxList } from "react-native-drax";
+import {
+  DraxProvider,
+  DraxView,
+  DraxList,
+  DraxScrollView,
+} from "react-native-drax";
 import { useNavigation } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { ScreenHeight } from "react-native-elements/dist/helpers";
+import { Iconify } from "react-native-iconify";
+import { useAuth } from "@/providers/AuthProvider";
+import { AddStoryButton } from "./AddStoryButton";
+
+enum Status {
+  todo = "todo",
+  doing = "doing",
+  done = "done",
+}
 
 const Colors = {
-  backGroundColor: "#1A1A1A",
-  innerBackGroundColor: "#1A1A1A",
-  borderColor: "#1A1A1A",
-  draggingColor: "#1A1A1A",
-  hoverDraggingColor: "#1A1A1A",
-  receivingColor: "#1A1A1A",
-  white: "#fff",
-  black: "#000",
+  backGroundColor: "#FFFFFF", // Light background color
+  innerBackGroundColor: "#F0F0F0", // Slightly darker inner background color
+  borderColor: "#CCCCCC", // Light border color
+  draggingColor: "#E0E0E0", // Light dragging color
+  hoverDraggingColor: "#E0E0E0", // Light hover dragging color
+  receivingColor: "#FF69B4", // Light receiving color
+  white: "#fff", // White
+  black: "#000", // Black
 };
 
 const ProjectScreen = () => {
   const [project, setProject] = useState<any>(null);
-  const [receivingItemList, setReceivedItemList] = React.useState<any>([]);
-  const [dragItemMiddleList, setDragItemListMiddle] = React.useState<any>([]);
-  const [doneItemList, setDoneItemList] = React.useState<any>([]);
+  const [receivingItemList, setReceivedItemList] = useState<any>([]);
+  const [dragItemMiddleList, setDragItemListMiddle] = useState<any>([]);
+  const [doneItemList, setDoneItemList] = useState<any>([]);
 
+  const { user } = useAuth();
   const { id } = useLocalSearchParams();
   const navigation = useNavigation();
 
@@ -33,6 +49,7 @@ const ProjectScreen = () => {
         .from("projects")
         .select("*")
         .eq("id", id)
+        .eq("owner_id", user?.id)
         .single();
 
       const { data: stories, error: storiesError } = await supabase
@@ -48,19 +65,40 @@ const ProjectScreen = () => {
 
       setProject(data);
 
-      const todoStories = stories.filter((story) => story.status === "todo");
-      const inProgressStories = stories.filter(
-        (story) => story.status === "doing"
+      const todoStories = stories.filter(
+        (story) => story.status === Status.todo
       );
-      const doneStories = stories.filter((story) => story.status === "done");
+      const inProgressStories = stories.filter(
+        (story) => story.status === Status.doing
+      );
+      const doneStories = stories.filter(
+        (story) => story.status === Status.done
+      );
 
       setReceivedItemList(todoStories);
       setDragItemListMiddle(inProgressStories);
       setDoneItemList(doneStories);
 
+      //change to back button
       navigation.setOptions({
         drawerLabel: `Project ${data.name}`,
         title: `Project ${data.name}`,
+        headerLeft: () => (
+          <TouchableOpacity
+            style={{
+              width: 30,
+              height: 30,
+              marginHorizontal: 10,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+            onPress={() => {
+              router.back();
+            }}
+          >
+            <Iconify icon="lets-icons:back" size={24} color="#0080ff" />
+          </TouchableOpacity>
+        ),
       });
     };
 
@@ -70,9 +108,14 @@ const ProjectScreen = () => {
       .channel("custom-all-channel")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "stories" },
-        (payload) => {
-          fetchData();
+        {
+          event: "*",
+          schema: "public",
+          table: "stories",
+          filter: `owner_id=eq.${user?.id}`,
+        },
+        async (payload) => {
+          await fetchData();
         }
       )
       .subscribe();
@@ -87,20 +130,20 @@ const ProjectScreen = () => {
       setDragItemListMiddle([]);
       channels.unsubscribe();
     };
-  }, [id]);
+  }, [id, user]);
 
-  const DragUIComponent = ({ item, index }: any) => {
+  const DragUIComponent = ({ item, index, status }: any) => {
     return (
       <DraxView
         style={[styles.centeredContent, styles.draggableBox]}
         draggingStyle={styles.dragging}
         dragReleasedStyle={styles.dragging}
         hoverDraggingStyle={styles.hoverDragging}
-        payload={item.id}
+        payload={item}
         longPressDelay={150}
         key={index}
         receivingStyle={styles.receiving}
-        renderContent={({ viewState }) => {
+        renderContent={() => {
           return (
             <View
               style={{
@@ -112,6 +155,9 @@ const ProjectScreen = () => {
                   styles.profileImgContainer,
                   { backgroundColor: Colors.black },
                 ]}
+                onPress={() => {
+                  router.navigate(`/stories/${item.id}`);
+                }}
               >
                 <Image
                   source={require("../../../../assets/images/favicon.png")}
@@ -127,53 +173,13 @@ const ProjectScreen = () => {
     );
   };
 
-  const ReceivingZoneUIComponent = ({ item, index }: any) => {
-    return (
-      <DraxView
-        style={[styles.centeredContent, styles.receivingZone]}
-        payload={item.id}
-        receivingStyle={styles.receiving}
-        renderContent={({ viewState }) => {
-          // const receivingDrag = viewState && viewState.receivingDrag;
-          // const payload = receivingDrag && receivingDrag.payload;
-          return (
-            <View
-              style={{
-                alignItems: "center",
-              }}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.profileImgContainer,
-                  { backgroundColor: Colors.black },
-                ]}
-              >
-                <Image
-                  source={require("../../../../assets/images/favicon.png")}
-                  style={styles.profileImg}
-                />
-              </TouchableOpacity>
-
-              <Text style={styles.text1}>{item.name}</Text>
-            </View>
-          );
-        }}
-        key={index}
-      />
-    );
-  };
-
-  const FlatListItemSeparator = () => {
-    return <View style={styles.itemSeparator} />;
-  };
-
   if (!project) {
     return <Text>Loading...</Text>;
   }
 
   const updateStoryStatus = async (storyId: number, status: string) => {
     console.log(storyId, status);
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("stories")
       .update({ status })
       .eq("id", storyId);
@@ -187,56 +193,74 @@ const ProjectScreen = () => {
     <View style={styles.container}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <DraxProvider>
-          <DraxView
-            style={styles.innerLayout}
-            onReceiveDragDrop={(event) => {
-              updateStoryStatus(event.dragged.payload, "todo");
-            }}
-          >
-            <Text style={styles.headerText}>To Do</Text>
-            <DraxList
-              data={receivingItemList}
-              renderItemContent={ReceivingZoneUIComponent}
-              keyExtractor={(item, index) => {
-                return index.toString();
+          <DraxScrollView horizontal scrollEnabled={true}>
+            <View
+              style={{
+                display: "flex",
+                flexDirection: "row",
               }}
-              ItemSeparatorComponent={FlatListItemSeparator}
-              numColumns={1}
-              scrollEnabled={true}
-            />
-          </DraxView>
-          <DraxView
-            style={styles.innerLayout}
-            onReceiveDragDrop={(event) => {
-              updateStoryStatus(event.dragged.payload, "doing");
-            }}
-          >
-            <Text style={styles.headerText}>Doing</Text>
-            <DraxList
-              data={dragItemMiddleList}
-              renderItemContent={DragUIComponent}
-              keyExtractor={(item, index) => index.toString()}
-              numColumns={1}
-              ItemSeparatorComponent={FlatListItemSeparator}
-              scrollEnabled={true}
-            />
-          </DraxView>
-          <DraxView
-            style={styles.innerLayout}
-            onReceiveDragDrop={(event) => {
-              updateStoryStatus(event.dragged.payload, "done");
-            }}
-          >
-            <Text style={styles.headerText}>Done</Text>
-            <DraxList
-              data={doneItemList}
-              renderItemContent={DragUIComponent}
-              keyExtractor={(item, index) => index.toString()}
-              numColumns={1}
-              ItemSeparatorComponent={FlatListItemSeparator}
-              scrollEnabled={true}
-            />
-          </DraxView>
+            >
+              <DraxView
+                style={styles.innerLayout}
+                onReceiveDragDrop={(event) => {
+                  if (event.dragged.payload.status === Status.todo) return;
+                  updateStoryStatus(event.dragged.payload.id, Status.todo);
+                }}
+              >
+                <Text style={styles.headerText}>To Do</Text>
+                <DraxList
+                  data={receivingItemList}
+                  renderItemContent={({ item, index }) =>
+                    DragUIComponent({ item, index, status: Status.todo })
+                  }
+                  keyExtractor={(item, index) => {
+                    return index.toString();
+                  }}
+                  numColumns={1}
+                  scrollEnabled={true}
+                />
+                <AddStoryButton projectId={project.id} status={Status.todo} />
+              </DraxView>
+              <DraxView
+                style={styles.innerLayout}
+                onReceiveDragDrop={(event) => {
+                  if (event.dragged.payload.status === Status.doing) return;
+                  updateStoryStatus(event.dragged.payload.id, Status.doing);
+                }}
+              >
+                <Text style={styles.headerText}>Doing</Text>
+                <DraxList
+                  data={dragItemMiddleList}
+                  renderItemContent={({ item, index }) =>
+                    DragUIComponent({ item, index, status: Status.doing })
+                  }
+                  keyExtractor={(item, index) => index.toString()}
+                  numColumns={1}
+                  scrollEnabled={true}
+                />
+                <AddStoryButton projectId={project.id} status={Status.doing} />
+              </DraxView>
+              <DraxView
+                style={styles.innerLayout}
+                onReceiveDragDrop={(event) => {
+                  if (event.dragged.payload.status === Status.done) return;
+                  updateStoryStatus(event.dragged.payload.id, Status.done);
+                }}
+              >
+                <Text style={styles.headerText}>Done</Text>
+                <DraxList
+                  data={doneItemList}
+                  renderItemContent={({ item, index }) =>
+                    DragUIComponent({ item, index, status: Status.done })
+                  }
+                  keyExtractor={(item, index) => index.toString()}
+                  numColumns={1}
+                  scrollEnabled={true}
+                />
+                <AddStoryButton projectId={project.id} status={Status.done} />
+              </DraxView>
+            </View>
+          </DraxScrollView>
         </DraxProvider>
       </GestureHandlerRootView>
     </View>
@@ -254,40 +278,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginVertical: 5,
     borderRadius: 5,
-    backgroundColor: Colors.innerBackGroundColor,
     borderColor: Colors.borderColor,
     borderWidth: 1,
-  },
-  innerLayout1: {
-    marginStart: 10,
-    marginVertical: 5,
-    borderRadius: 5,
-    backgroundColor: Colors.innerBackGroundColor,
-    borderColor: Colors.borderColor,
-    borderWidth: 1,
-    flex: 1,
-    padding: 10,
-  },
-  innerLayout2: {
-    marginHorizontal: 10,
-    marginVertical: 5,
-    borderRadius: 5,
-    borderColor: Colors.borderColor,
-    borderWidth: 1,
-    flex: 1,
-    padding: 10,
+    minWidth: 300,
+    display: "flex",
+    flexDirection: "column",
+    minHeight: ScreenHeight - 400,
   },
 
   headerText: {
     fontFamily: "Arial",
     fontSize: 20,
-    color: Colors.white,
+    color: Colors.black,
     marginVertical: 10,
   },
 
   text: {
     fontSize: 10,
-    color: Colors.white,
+    color: Colors.black,
     marginTop: 5,
     marginBottom: 10,
     textAlign: "center",
@@ -295,7 +303,7 @@ const styles = StyleSheet.create({
   },
   text1: {
     fontSize: 10,
-    color: Colors.white,
+    color: Colors.black,
     marginTop: 5,
     textAlign: "center",
   },
@@ -345,7 +353,6 @@ const styles = StyleSheet.create({
   },
 
   centeredContent: {
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 10,

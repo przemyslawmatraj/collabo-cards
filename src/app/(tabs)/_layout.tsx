@@ -27,7 +27,7 @@ export default function LoggedInLayout() {
   }
 
   return (
-    <Drawer drawerContent={CustomDrawerContent}>
+    <Drawer drawerContent={CustomDrawerContent} backBehavior="history">
       <Drawer.Screen
         name="index" // This is the name of the page and must match the url from root
         options={{
@@ -48,6 +48,14 @@ export default function LoggedInLayout() {
           drawerItemStyle: { display: "none" },
           drawerLabel: "Project",
           title: "Project",
+        }}
+      />
+      <Drawer.Screen
+        name="stories/[id]" // This is the name of the page and must match the url from root
+        options={{
+          drawerItemStyle: { display: "none" },
+          drawerLabel: "Story",
+          title: "Story",
         }}
       />
       <Drawer.Screen
