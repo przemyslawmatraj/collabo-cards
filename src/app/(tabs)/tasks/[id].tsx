@@ -1,10 +1,11 @@
-import { View, Text } from "react-native-ui-lib";
+import { View, Text, Card } from "react-native-ui-lib";
 import { supabase } from "@/lib/supabase";
 import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import { useEffect, useState } from "react";
 import { Iconify } from "react-native-iconify";
 import { TouchableOpacity } from "react-native-ui-lib";
 import { Picker } from "react-native-ui-lib";
+import Colors from "@/constants/Colors";
 
 export default function TaskScreen() {
   const [task, setTask] = useState<any>(null);
@@ -116,39 +117,40 @@ export default function TaskScreen() {
     return <Text>Loading...</Text>;
   }
   return (
-    <View style={{ flex: 1, backgroundColor: "#FFF" }}>
-      <Text>Name: {task.name}</Text>
-      <Text>Description: {task.description}</Text>
-      <Text>Priority: {task.priority}</Text>
-      <Text>Status: {task.status}</Text>
-      <Text>Start date: {task.start_date ?? "Not specified yet"}</Text>
-      <Text>End date: {task.end_date ?? "Not specified yet"}</Text>
-      <View>
-        <Text>Assigned to</Text>
+    <View flex padding-page style={{ backgroundColor: Colors.white }}>
+      <Card style={{ padding: 10, marginBottom: 10 }}>
+        <Text text50>Name: {task.name}</Text>
+        <Text text70>Description: {task.description}</Text>
+        <Text text70>Priority: {task.priority}</Text>
+        <Text text70>Status: {task.status}</Text>
+        <Text text70>Start date: {task.start_date ?? "Not specified yet"}</Text>
+        <Text text70>End date: {task.end_date ?? "Not specified yet"}</Text>
+      </Card>
+      <Card style={{ padding: 10 }}>
+        <Text text70 marginB-s3>
+          Assigned to
+        </Text>
         <Picker
           defaultValue={task.profiles?.id || ""}
           items={profiles}
-          fieldStyle={{
-            width: "100%",
-            minWidth: 300,
-          }}
+          fieldStyle={{ borderColor: Colors.borderColor }}
           containerStyle={{
-            width: "100%",
-            minWidth: 300,
-            borderRadius: 5,
+            borderColor: Colors.borderColor,
             borderWidth: 1,
-            padding: 10,
+            borderRadius: 8,
+            paddingHorizontal: 10,
+            paddingVertical: 5,
+            backgroundColor: Colors.white,
           }}
-          fieldType="settings"
-          placeholder={"Assignee"}
+          placeholder="Assignee"
           label="Task Assignee"
-          onChange={(text) => {
-            assignTask(text as string);
-            setAssignee(text as string);
+          onChange={(value) => {
+            assignTask(value);
+            setAssignee(value);
           }}
-          value={assignee || task.profiles?.id}
-        ></Picker>
-      </View>
+          value={assignee}
+        />
+      </Card>
     </View>
   );
 }

@@ -18,6 +18,7 @@ import { AddStoryButton } from "@/components/AddStoryButton";
 import Moment from "moment";
 import Colors from "@/constants/Colors";
 import { Status } from "@/constants/Status";
+import { useTabEffect } from "@/utils/useTabEffect";
 
 Moment.locale("en");
 
@@ -55,66 +56,73 @@ const ProjectScreen = () => {
   const { id } = useLocalSearchParams();
   const navigation = useNavigation();
 
+  const fetchData = async () => {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    const { data: stories, error: storiesError } = await supabase
+      .from("stories")
+      .select("*")
+      .eq("project_id", id)
+      .order("creation_date", { ascending: false });
+
+    if (error || storiesError) {
+      console.log(error, storiesError);
+      return;
+    }
+
+    setProject(data);
+
+    const todoStories = stories.filter((story) => story.status === Status.todo);
+    const inProgressStories = stories.filter(
+      (story) => story.status === Status.doing
+    );
+    const doneStories = stories.filter((story) => story.status === Status.done);
+
+    setReceivedItemList(todoStories);
+    setDragItemListMiddle(inProgressStories);
+    setDoneItemList(doneStories);
+
+    //change to back button
+    navigation.setOptions({
+      drawerLabel: `Project ${data.name}`,
+      title: `Project ${data.name}`,
+      headerLeft: () => (
+        <TouchableOpacity
+          style={{
+            width: 30,
+            height: 30,
+            marginHorizontal: 10,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+          onPress={() => {
+            router.back();
+          }}
+        >
+          <Iconify icon="lets-icons:back" size={24} color="#0080ff" />
+        </TouchableOpacity>
+      ),
+    });
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      const { data: stories, error: storiesError } = await supabase
-        .from("stories")
-        .select("*")
-        .eq("project_id", id)
-        .order("creation_date", { ascending: false });
-
-      if (error || storiesError) {
-        console.log(error, storiesError);
-        return;
-      }
-
-      setProject(data);
-
-      const todoStories = stories.filter(
-        (story) => story.status === Status.todo
-      );
-      const inProgressStories = stories.filter(
-        (story) => story.status === Status.doing
-      );
-      const doneStories = stories.filter(
-        (story) => story.status === Status.done
-      );
-
-      setReceivedItemList(todoStories);
-      setDragItemListMiddle(inProgressStories);
-      setDoneItemList(doneStories);
-
-      //change to back button
-      navigation.setOptions({
-        drawerLabel: `Project ${data.name}`,
-        title: `Project ${data.name}`,
-        headerLeft: () => (
-          <TouchableOpacity
-            style={{
-              width: 30,
-              height: 30,
-              marginHorizontal: 10,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-            onPress={() => {
-              router.back();
-            }}
-          >
-            <Iconify icon="lets-icons:back" size={24} color="#0080ff" />
-          </TouchableOpacity>
-        ),
-      });
-    };
-
     fetchData();
+    return () => {
+      navigation.setOptions({
+        drawerLabel: `Project Loading`,
+        title: `Project Loading`,
+      });
+      setProject(null);
+      setReceivedItemList([]);
+      setDragItemListMiddle([]);
+    };
+  }, [id]);
 
+  useTabEffect(`/projects/${id}`, () => {
     const channels = supabase
       .channel("custom-all-channel")
       .on(
@@ -129,18 +137,10 @@ const ProjectScreen = () => {
         }
       )
       .subscribe();
-
     return () => {
-      navigation.setOptions({
-        drawerLabel: `Project Loading`,
-        title: `Project Loading`,
-      });
-      setProject(null);
-      setReceivedItemList([]);
-      setDragItemListMiddle([]);
       channels.unsubscribe();
     };
-  }, [id]);
+  });
 
   const DragUIComponent = ({ item, index, status }: any) => {
     return (

@@ -24,6 +24,11 @@ export const AddStoryButton = ({
   };
 
   const addStory = async () => {
+    if (!name || !description || !priority || !projectId || !status) {
+      alert("Please fill all the fields");
+      return;
+    }
+
     const { error } = await supabase
       .from("stories")
       .insert({
@@ -39,6 +44,9 @@ export const AddStoryButton = ({
       console.log(error);
     }
 
+    setName("");
+    setDescription("");
+    setPriority("");
     setModalVisible(false);
   };
 

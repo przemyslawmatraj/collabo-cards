@@ -12,20 +12,28 @@ import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import Moment from "moment";
 import { router } from "expo-router";
+import { AddProjectButton } from "@/components/AddProjectButton";
 
 Moment.locale("en");
 
 export default function TabOneScreen() {
   const [items, setItems] = useState([]);
 
-  useEffect(() => {
-    supabase
+  const fetchAllProjects = async () => {
+    const { data, error } = await supabase
       .from("projects")
       .select("*")
-      .then(({ data }) => {
-        console.log(data);
-        setItems(data);
-      });
+      .order("creation_date", { ascending: false });
+
+    if (error) {
+      console.log(error);
+    }
+
+    setItems(data);
+  };
+
+  useEffect(() => {
+    fetchAllProjects();
   }, []);
 
   const renderItem = ({ item, index }) => {
@@ -78,6 +86,7 @@ export default function TabOneScreen() {
         pagingEnabled
         itemSpacing={Spacings.s3}
       />
+      <AddProjectButton onSubmit={fetchAllProjects} />
     </View>
   );
 }

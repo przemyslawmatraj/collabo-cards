@@ -32,20 +32,11 @@ import { AddTaskButton } from "@/components/AddTaskButton";
 import Moment from "moment";
 import Colors from "@/constants/Colors";
 import { Status } from "@/constants/Status";
+import { useTabEffect } from "@/utils/useTabEffect";
 
 Moment.locale("en");
 
 // function that returns void or function that reurns function to cleanup
-
-export function useTabEffect(route: string, effect: React.EffectCallback) {
-  const path = usePathname();
-  useEffect(() => {
-    if (path === route) {
-      const cleanup = effect();
-      return cleanup;
-    }
-  }, [path]);
-}
 
 const PriorityIcon = ({ priority }: { priority: string }) => {
   switch (priority) {
