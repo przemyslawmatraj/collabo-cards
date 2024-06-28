@@ -6,11 +6,14 @@ import Modal from "react-native-modal";
 import { supabase } from "@/lib/supabase";
 import Colors from "@/constants/Colors";
 import { useAuth } from "@/providers/AuthProvider";
+import { useNotifications } from "@/providers/NotificationProvider";
+import { NotificationPriority } from "@/utils/NotificationService";
 
 export const AddProjectButton = ({ onSubmit }: { onSubmit: () => void }) => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const notificationService = useNotifications();
 
   const { user } = useAuth();
 
@@ -41,6 +44,14 @@ export const AddProjectButton = ({ onSubmit }: { onSubmit: () => void }) => {
     if (error) {
       console.log(error);
     }
+
+    notificationService.send({
+      title: "New Project",
+      message: "A new project has been created" + "\n" + name,
+      date: new Date().toISOString(),
+      priority: NotificationPriority.low,
+      read: false,
+    });
 
     onSubmit();
     setName("");

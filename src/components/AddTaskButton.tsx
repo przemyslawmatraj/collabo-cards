@@ -6,6 +6,8 @@ import Modal from "react-native-modal";
 import { supabase } from "@/lib/supabase";
 import Colors from "@/constants/Colors";
 import { Status } from "@/constants/Status";
+import { NotificationPriority } from "@/utils/NotificationService";
+import { useNotifications } from "@/providers/NotificationProvider";
 
 export const AddTaskButton = ({
   status,
@@ -17,13 +19,17 @@ export const AddTaskButton = ({
   const [isModalVisible, setModalVisible] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState("");
+  const [priority, setPriority] = useState<NotificationPriority>(
+    NotificationPriority.low
+  );
+
+  const notificationService = useNotifications();
 
   const toggleModal = () => {
     setModalVisible(!isModalVisible);
   };
 
-  const addStory = async () => {
+  const addTask = async () => {
     if (!name || !description || !priority) {
       alert("Please fill all the fields");
       return;
@@ -44,6 +50,17 @@ export const AddTaskButton = ({
       console.log(error);
     }
 
+    notificationService.send({
+      title: "New Task",
+      message: "A new task has been created" + "\n" + name,
+      date: new Date().toISOString(),
+      priority,
+      read: false,
+    });
+
+    setName("");
+    setDescription("");
+    setPriority(NotificationPriority.low);
     setModalVisible(false);
   };
 
@@ -103,7 +120,7 @@ export const AddTaskButton = ({
               rowGap: 10,
             }}
           >
-            <RNText>Add New {status.toLocaleUpperCase()} Story</RNText>
+            <RNText>Add New {status.toLocaleUpperCase()} Task</RNText>
             <TextField
               placeholder={"Name"}
               floatingPlaceholder
@@ -177,7 +194,7 @@ export const AddTaskButton = ({
               }}
               value={priority}
             ></Picker>
-            <Button title="Add Story" onPress={addStory} />
+            <Button title="Add Task" onPress={addTask} />
             <Button title="Close" onPress={toggleModal} />
           </Card>
         </View>

@@ -13,7 +13,6 @@ import { useNavigation } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { ScreenHeight } from "react-native-elements/dist/helpers";
 import { Iconify } from "react-native-iconify";
-import { useAuth } from "@/providers/AuthProvider";
 import { AddStoryButton } from "@/components/AddStoryButton";
 import Moment from "moment";
 import Colors from "@/constants/Colors";

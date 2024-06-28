@@ -12,6 +12,10 @@ import { useEffect } from "react";
 import AuthProvider from "@/providers/AuthProvider";
 
 import { useColorScheme } from "@components/useColorScheme";
+import { NotificationProvider } from "@/providers/NotificationProvider";
+import UnreadCount from "@/components/Notifications/NotificationUnreadCount";
+import NotificationList from "@/components/Notifications/NotificationList";
+import NotificationDialog from "@/components/Notifications/NotificationDialog";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -56,10 +60,12 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AuthProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="auth" options={{ headerShown: false }} />
-        </Stack>
+        <NotificationProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="auth" options={{ headerShown: false }} />
+          </Stack>
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   );

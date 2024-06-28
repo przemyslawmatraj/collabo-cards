@@ -6,6 +6,8 @@ import Modal from "react-native-modal";
 import { supabase } from "@/lib/supabase";
 import Colors from "@/constants/Colors";
 import { Status } from "@/constants/Status";
+import { useNotifications } from "@/providers/NotificationProvider";
+import { NotificationPriority } from "@/utils/NotificationService";
 
 export const AddStoryButton = ({
   status,
@@ -17,7 +19,10 @@ export const AddStoryButton = ({
   const [isModalVisible, setModalVisible] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState("");
+  const [priority, setPriority] = useState<NotificationPriority>(
+    NotificationPriority.low
+  );
+  const notificationService = useNotifications();
 
   const toggleModal = () => {
     setModalVisible(!isModalVisible);
@@ -44,9 +49,17 @@ export const AddStoryButton = ({
       console.log(error);
     }
 
+    notificationService.send({
+      title: "New Story",
+      message: "A new story has been created" + "\n" + name,
+      date: new Date().toISOString(),
+      priority,
+      read: false,
+    });
+
     setName("");
     setDescription("");
-    setPriority("");
+    setPriority(NotificationPriority.low);
     setModalVisible(false);
   };
 
@@ -176,7 +189,9 @@ export const AddStoryButton = ({
               placeholder={"Priority"}
               label="Project Priority"
               onChange={(text) => {
-                setPriority(text as string);
+                setPriority(
+                  text?.toString().toLowerCase() as NotificationPriority
+                );
               }}
               value={priority}
             ></Picker>
