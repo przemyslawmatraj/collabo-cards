@@ -50,21 +50,6 @@ export default function TabOneScreen() {
             contentStyle={{ alignItems: "center" }}
           />
         </Card>
-        <Card
-          bg-grey80
-          flex
-          width={"100%"}
-          padding-10
-          borderRadius={10}
-          onPress={() => {
-            router.navigate("/projects");
-          }}
-        >
-          <Card.Section
-            content={[{ text: "Stories", text30: true }]}
-            contentStyle={{ alignItems: "center" }}
-          />
-        </Card>
       </View>
     </View>
   );

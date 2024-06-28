@@ -16,4 +16,12 @@ export default {
     tabIconDefault: "#ccc",
     tabIconSelected: tintColorDark,
   },
+  backGroundColor: "#FFFFFF", // Light background color
+  innerBackGroundColor: "#F0F0F0", // Slightly darker inner background color
+  borderColor: "#CCCCCC", // Light border color
+  draggingColor: "#E0E0E0", // Light dragging color
+  hoverDraggingColor: "#E0E0E0", // Light hover dragging color
+  receivingColor: "#FF69B4", // Light receiving color
+  white: "#fff", // White
+  black: "#000", // Black
 };

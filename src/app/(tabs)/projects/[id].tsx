@@ -16,25 +16,10 @@ import { Iconify } from "react-native-iconify";
 import { useAuth } from "@/providers/AuthProvider";
 import { AddStoryButton } from "@/components/AddStoryButton";
 import Moment from "moment";
+import Colors from "@/constants/Colors";
+import { Status } from "@/constants/Status";
 
 Moment.locale("en");
-
-enum Status {
-  todo = "todo",
-  doing = "doing",
-  done = "done",
-}
-
-const Colors = {
-  backGroundColor: "#FFFFFF", // Light background color
-  innerBackGroundColor: "#F0F0F0", // Slightly darker inner background color
-  borderColor: "#CCCCCC", // Light border color
-  draggingColor: "#E0E0E0", // Light dragging color
-  hoverDraggingColor: "#E0E0E0", // Light hover dragging color
-  receivingColor: "#FF69B4", // Light receiving color
-  white: "#fff", // White
-  black: "#000", // Black
-};
 
 const PriorityIcon = ({ priority }: { priority: string }) => {
   switch (priority) {

@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, usePathname } from "expo-router";
 import {
   Card,
   Modal,
@@ -30,25 +30,22 @@ import { Iconify } from "react-native-iconify";
 import { useAuth } from "@/providers/AuthProvider";
 import { AddTaskButton } from "@/components/AddTaskButton";
 import Moment from "moment";
+import Colors from "@/constants/Colors";
+import { Status } from "@/constants/Status";
 
 Moment.locale("en");
 
-enum Status {
-  todo = "todo",
-  doing = "doing",
-  done = "done",
-}
+// function that returns void or function that reurns function to cleanup
 
-const Colors = {
-  backGroundColor: "#FFFFFF", // Light background color
-  innerBackGroundColor: "#F0F0F0", // Slightly darker inner background color
-  borderColor: "#CCCCCC", // Light border color
-  draggingColor: "#E0E0E0", // Light dragging color
-  hoverDraggingColor: "#E0E0E0", // Light hover dragging color
-  receivingColor: "#FF69B4", // Light receiving color
-  white: "#fff", // White
-  black: "#000", // Black
-};
+export function useTabEffect(route: string, effect: React.EffectCallback) {
+  const path = usePathname();
+  useEffect(() => {
+    if (path === route) {
+      const cleanup = effect();
+      return cleanup;
+    }
+  }, [path]);
+}
 
 const PriorityIcon = ({ priority }: { priority: string }) => {
   switch (priority) {
@@ -84,69 +81,81 @@ const StoriesScreen = () => {
   const { id } = useLocalSearchParams();
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data, error } = await supabase
-        .from("stories")
-        .select("*")
-        .eq("id", id)
-        .single();
+  const fetchData = async () => {
+    const { data, error } = await supabase
+      .from("stories")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-      const { data: tasks, error: tasksError } = await supabase
-        .from("tasks")
-        .select(
+    const { data: tasks, error: tasksError } = await supabase
+      .from("tasks")
+      .select(
+        `
+          *,
+          profiles (
+              id,
+              username
+          )
           `
-            *,
-            profiles (
-                id,
-                username
-            )
-            `
-        )
-        .eq("story_id", id);
+      )
+      .eq("story_id", id);
 
-      if (error || tasksError) {
-        console.log(error, tasksError);
-        return;
-      }
+    if (error || tasksError) {
+      console.log(error, tasksError);
+      return;
+    }
 
-      setStory(data);
+    setStory(data);
 
-      const todoTasks = tasks.filter((task) => task.status === Status.todo);
-      const inProgressTasks = tasks.filter(
-        (task) => task.status === Status.doing
-      );
-      const doneTasks = tasks.filter((task) => task.status === Status.done);
+    const todoTasks = tasks.filter((task) => task.status === Status.todo);
+    const inProgressTasks = tasks.filter(
+      (task) => task.status === Status.doing
+    );
+    const doneTasks = tasks.filter((task) => task.status === Status.done);
 
-      setReceivedItemList(todoTasks);
-      setDragItemListMiddle(inProgressTasks);
-      setDoneItemList(doneTasks);
+    setReceivedItemList(todoTasks);
+    setDragItemListMiddle(inProgressTasks);
+    setDoneItemList(doneTasks);
 
-      //change to back button
-      navigation.setOptions({
-        drawerLabel: `Story ${data.name}`,
-        title: `Story ${data.name}`,
-        headerLeft: () => (
-          <TouchableOpacity
-            style={{
-              width: 30,
-              height: 30,
-              marginHorizontal: 10,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-            onPress={() => {
-              router.back();
-            }}
-          >
-            <Iconify icon="lets-icons:back" size={24} color="#0080ff" />
-          </TouchableOpacity>
-        ),
-      });
-    };
+    //change to back button
+    navigation.setOptions({
+      drawerLabel: `Story ${data.name}`,
+      title: `Story ${data.name}`,
+      headerLeft: () => (
+        <TouchableOpacity
+          style={{
+            width: 30,
+            height: 30,
+            marginHorizontal: 10,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+          onPress={() => {
+            router.back();
+          }}
+        >
+          <Iconify icon="lets-icons:back" size={24} color="#0080ff" />
+        </TouchableOpacity>
+      ),
+    });
+  };
 
+  useEffect(() => {
     fetchData();
 
+    return () => {
+      navigation.setOptions({
+        drawerLabel: `Story Loading`,
+        title: `Story Loading`,
+      });
+      setStory(null);
+      setReceivedItemList([]);
+      setDragItemListMiddle([]);
+    };
+  }, [id]);
+
+  useTabEffect(`/stories/${id}`, () => {
     const channels = supabase
       .channel("custom-all-channel")
       .on(
@@ -161,18 +170,15 @@ const StoriesScreen = () => {
         }
       )
       .subscribe();
-
+    fetchData();
     return () => {
-      navigation.setOptions({
-        drawerLabel: `Story Loading`,
-        title: `Story Loading`,
-      });
-      setStory(null);
-      setReceivedItemList([]);
-      setDragItemListMiddle([]);
       channels.unsubscribe();
     };
-  }, [id]);
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const DragUIComponent = ({ item, index, status }: any) => {
     return (
