@@ -162,7 +162,7 @@ export const AddProjectButton = ({ onSubmit }: { onSubmit: () => void }) => {
               validationMessage={["Field is required", "Password is too short"]}
               maxLength={30}
             />
-            <Button title="Add Story" onPress={addProject} />
+            <Button title="Add Project" onPress={addProject} />
             <Button title="Close" onPress={toggleModal} />
           </Card>
         </View>
