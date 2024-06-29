@@ -6,6 +6,7 @@ import { Iconify } from "react-native-iconify";
 import { TouchableOpacity } from "react-native-ui-lib";
 import { Picker } from "react-native-ui-lib";
 import Colors from "@/constants/Colors";
+import { useTabEffect } from "@/utils/useTabEffect";
 
 export default function TaskScreen() {
   const [task, setTask] = useState<any>(null);
@@ -14,68 +15,78 @@ export default function TaskScreen() {
   const { id } = useLocalSearchParams();
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data, error: error } = await supabase
-        .from("tasks")
-        .select(
+  const fetchData = async () => {
+    const { data, error: error } = await supabase
+      .from("tasks")
+      .select(
+        `
+          *,
+          profiles (
+              id,
+              username
+          )
           `
-            *,
-            profiles (
-                id,
-                username
-            )
-            `
-        )
-        .eq("id", Number(id));
+      )
+      .eq("id", Number(id));
 
-      if (error) {
-        console.log(error);
-        return;
-      }
+    if (error) {
+      console.log(error);
+      return;
+    }
 
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("*");
-      console.log(profilesData);
-      if (profilesError) {
-        console.log(profilesError);
-      }
+    const { data: profilesData, error: profilesError } = await supabase
+      .from("profiles")
+      .select("*");
+    console.log(profilesData);
+    if (profilesError) {
+      console.log(profilesError);
+    }
 
-      setProfiles(
-        profilesData?.map((profile) => {
-          return {
-            label: profile.username,
-            value: profile.id,
-          };
-        })
-      );
-      setTask(data[0]);
+    setProfiles(
+      profilesData?.map((profile) => {
+        return {
+          label: profile.username,
+          value: profile.id,
+        };
+      })
+    );
+    setTask(data[0]);
 
-      navigation.setOptions({
-        drawerLabel: `Task ${data[0].name}`,
-        title: `Task ${data[0].name}`,
-        headerLeft: () => (
-          <TouchableOpacity
-            style={{
-              width: 30,
-              height: 30,
-              marginHorizontal: 10,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-            onPress={() => {
-              router.back();
-            }}
-          >
-            <Iconify icon="lets-icons:back" size={24} color="#0080ff" />
-          </TouchableOpacity>
-        ),
-      });
-    };
+    navigation.setOptions({
+      drawerLabel: `Task ${data[0].name}`,
+      title: `Task ${data[0].name}`,
+      headerLeft: () => (
+        <TouchableOpacity
+          style={{
+            width: 30,
+            height: 30,
+            marginHorizontal: 10,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+          onPress={() => {
+            router.back();
+          }}
+        >
+          <Iconify icon="lets-icons:back" size={24} color="#0080ff" />
+        </TouchableOpacity>
+      ),
+    });
+  };
 
+  useEffect(() => {
     fetchData();
+    return () => {
+      navigation.setOptions({
+        drawerLabel: `Task Loading`,
+        title: `Task Loading`,
+      });
+      setTask(null);
+      setProfiles([]);
+    };
+  }, [id]);
 
+  useTabEffect(`/tasks/${id}`, () => {
     const channels = supabase
       .channel("custom-all-channel")
       .on(
@@ -90,17 +101,10 @@ export default function TaskScreen() {
         }
       )
       .subscribe();
-
     return () => {
-      navigation.setOptions({
-        drawerLabel: `Task Loading`,
-        title: `Task Loading`,
-      });
       channels.unsubscribe();
-      setTask(null);
-      setProfiles([]);
     };
-  }, [id]);
+  });
 
   const assignTask = async (user_id: string) => {
     const { error } = await supabase
